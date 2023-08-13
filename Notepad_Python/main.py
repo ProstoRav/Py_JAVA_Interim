@@ -2,7 +2,9 @@ import json
 import os
 from datetime import datetime
 
-notes_file = "notes.json"
+# Get the directory path of the current file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+notes_file = os.path.join(current_dir, "notes.json")
 
 # Check if notes file exists, otherwise create an empty one
 if not os.path.exists(notes_file):
