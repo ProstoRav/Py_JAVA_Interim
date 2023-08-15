@@ -1,7 +1,10 @@
 package geekbrains;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -60,17 +63,34 @@ class ToyGiveaway {
     }
 }
 
-public class Main {
-    public static void main(String[] args) {
-        ToyGiveaway toyGiveaway = new ToyGiveaway();
+class Logic {
+    public static void createResultsFile(ToyGiveaway toyGiveaway) {
+        String folderPath = createOutputFolder();
+        Path basePath = Paths.get(folderPath);
+        String fileName = getFileName();
+        Path filePath = basePath.resolve(fileName);
+        writeResultsToFile(toyGiveaway, filePath);
+    }
 
-        toyGiveaway.addToy(new Toy(1, "Конструктор", 2));
-        toyGiveaway.addToy(new Toy(2, "Робот", 2));
-        toyGiveaway.addToy(new Toy(3, "Кукла", 6));
+    private static String createOutputFolder() {
+        String folderPath = "ToyStore_JAVA/Giveaway_results";
+        boolean wasSuccessful = new File(folderPath).mkdirs();
+        if (wasSuccessful) {
+            System.out.println("Создаём папку " + folderPath + " для записи результатов розыгрыша");
+            System.out.println();
+        }
+        return folderPath;
+    }
 
-        try {
-            FileWriter fileWriter = new FileWriter("toy_giveaway_results.txt");
+    private static String getFileName() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+        String timestamp = now.format(formatter);
+        return "giveaway_result_" + timestamp + ".txt";
+    }
 
+    private static void writeResultsToFile(ToyGiveaway toyGiveaway, Path filePath) {
+        try (FileWriter fileWriter = new FileWriter(filePath.toString())) {
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             String timestamp = now.format(formatter);
@@ -80,25 +100,39 @@ public class Main {
             fileWriter.write(title + "\n");
             fileWriter.write("\n");
 
-            for (int i = 0; i < 10; i++) {
-                int t = i + 1;
-                if (toyGiveaway.hasToys()) {
+            performToyGiveaway(toyGiveaway, fileWriter);
 
-                    Toy toy = toyGiveaway.getToy();
-
-                    if (toy != null) {
-                        String result ="Розыгрыш №" + t + ". Вы выиграли игрушку под номером " + toy.getToyId() + ", " + toy.getToyName();
-                        System.out.println(result);
-                        fileWriter.write(result + "\n");
-                    }
-                }
-            }
-
-            fileWriter.close();
             System.out.println();
-            System.out.println("Результаты розыгрыша записаны в файл toy_giveaway_results.txt");
+            System.out.println("Результаты розыгрыша записаны в файл " + filePath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void performToyGiveaway(ToyGiveaway toyGiveaway, FileWriter fileWriter) throws IOException {
+        int t = 1;
+        while (t <= 10 && toyGiveaway.hasToys()) {
+            Toy toy = toyGiveaway.getToy();
+            if (toy != null) {
+                String result = "Розыгрыш №" + t + ". Вы выиграли игрушку под номером " + toy.getToyId() + ", " + toy.getToyName();
+                System.out.println(result);
+                fileWriter.write(result + "\n");
+            }
+            t++;
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ToyGiveaway toyGiveaway = new ToyGiveaway();
+
+        toyGiveaway.addToy(new Toy(1, "Конструктор", 2));
+        toyGiveaway.addToy(new Toy(2, "Робот", 2));
+        toyGiveaway.addToy(new Toy(3, "Кукла", 6));
+
+        Logic.createResultsFile(toyGiveaway);
+
+        System.exit(0);
     }
 }
